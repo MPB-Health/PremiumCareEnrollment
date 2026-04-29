@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useEnrollmentStorage, Dependent, PaymentInfo, QuestionnaireAnswers } from '../hooks/useEnrollmentStorage';
+import { useEnrollmentStorage, Dependent, PaymentInfo, QuestionnaireAnswers, AppliedPromo } from '../hooks/useEnrollmentStorage';
 import { getCarePlusPricingOptions, calculateAgeFromDOB } from '../utils/pricingLogic';
 import { generateEnrollmentPDF } from '../utils/generateEnrollmentPDF';
 import { getDependentEmailDuplicateError } from '../utils/dependentEmailValidation';
@@ -689,11 +689,11 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
   };
 
   const handlePromoCodeChange = (code: string) => {
-    saveFormData({ ...formData, promoCode: code });
+    saveFormData((prev) => ({ ...prev, promoCode: code }));
   };
 
-  const handleAppliedPromoChange = (promo: any) => {
-    saveFormData({ ...formData, appliedPromo: promo });
+  const handleAppliedPromoChange = (promo: AppliedPromo | null) => {
+    saveFormData((prev) => ({ ...prev, appliedPromo: promo }));
   };
 
 
@@ -811,7 +811,7 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
         })),
         payment: formData.payment,
         pdid: formData.pdid,
-        promoCode: formData.promoCode,
+        promoCode: formData.appliedPromo ? formData.promoCode.trim() : '',
         referral: (formData.questionnaireAnswers?.referral || '').trim().slice(0, 24),
       };
 

@@ -196,9 +196,12 @@ export function useEnrollmentStorage(benefitId: string | null, agentId: string =
     }));
   }, [benefitId]);
 
-  const saveFormData = useCallback((data: FormData) => {
-    setFormData(data);
-  }, []);
+  const saveFormData = useCallback(
+    (data: FormData | ((prev: FormData) => FormData)) => {
+      setFormData((prev) => (typeof data === 'function' ? data(prev) : data));
+    },
+    [],
+  );
 
   const saveStep = useCallback((step: number) => {
     setCurrentStep(step);
