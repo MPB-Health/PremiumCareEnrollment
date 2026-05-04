@@ -98,6 +98,9 @@ const COVERAGE_MAP: Record<string, string> = {
   "3296": "Member + Family",
 };
 
+/** Zoho CRM `Product_Type` — fixed for Premium Care (PDID 43957); do not vary by benefit/IUA. */
+const ZOHO_PRODUCT_TYPE = "PremiumCare(43957)";
+
 function base64ToArrayBuffer(base64: string): ArrayBuffer {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
@@ -344,7 +347,7 @@ function buildZohoContactData(
     Contact_Status: "New Enrollment",
     Carrier: "CarePlus",
     Company_Association: "MPB Health",
-    Product_Type: `Care Plus 2024 (${payload.benefitId})`,
+    Product_Type: ZOHO_PRODUCT_TYPE,
     Coverage_Option: COVERAGE_MAP[payload.benefitId] || "Unknown",
   };
 
