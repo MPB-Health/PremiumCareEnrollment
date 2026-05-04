@@ -248,7 +248,10 @@ export default function Step2Questionnaire({
 
         <div className="space-y-8">
           <div className="space-y-4">
-            <p className="font-semibold text-gray-900">Understanding Premium Care Principles of Membership</p>
+            <p className="font-semibold text-gray-900">
+              Understanding Premium Care Principles of Membership
+              <span className="text-red-500 ml-1">*</span>
+            </p>
             <p className="text-sm text-gray-700 leading-relaxed">
               I/we commit to living according to the Sedera (Sharing Organization) Membership Principles, including:
             </p>
@@ -294,7 +297,10 @@ export default function Step2Questionnaire({
               I, as the Primary Member, approve this membership commitment for myself and all household members listed on this
               application.
             </p>
-            <p className="font-semibold text-gray-900">I understand that:</p>
+            <p className="font-semibold text-gray-900">
+              I understand that:
+              <span className="text-red-500 ml-1">*</span>
+            </p>
             <ul className="text-sm text-gray-700 leading-relaxed list-disc list-inside space-y-2 mb-4">
               <li>This membership is not insurance; it is a voluntary medical needs sharing program.</li>
               <li>There are no guarantees that medical expenses will be shared.</li>
@@ -334,7 +340,10 @@ export default function Step2Questionnaire({
           </div>
 
           <div className="space-y-4 border-t border-gray-200 pt-6">
-            <p className="font-semibold text-gray-900">Dispute Resolution &amp; Responsibility</p>
+            <p className="font-semibold text-gray-900">
+              Dispute Resolution &amp; Responsibility
+              <span className="text-red-500 ml-1">*</span>
+            </p>
             <ul className="text-sm text-gray-700 leading-relaxed list-disc list-inside space-y-2 mb-4">
               <li>
                 I agree to resolve disputes through mediation and binding arbitration as described in the Membership Guidelines.
@@ -371,7 +380,10 @@ export default function Step2Questionnaire({
           </div>
 
           <div className="space-y-4 border-t border-gray-200 pt-6">
-            <p className="font-semibold text-gray-900">Acknowledgements &amp; State Notices</p>
+            <p className="font-semibold text-gray-900">
+              Acknowledgements &amp; State Notices
+              <span className="text-red-500 ml-1">*</span>
+            </p>
             <ul className="text-sm text-gray-700 leading-relaxed list-disc list-inside space-y-2 mb-4">
               <li>I understand Sedera is a faith-based, nonprofit organization, not an insurance company.</li>
               <li>I acknowledge that membership is subject to any state-specific legal notices or disclaimers.</li>
@@ -419,7 +431,10 @@ export default function Step2Questionnaire({
 
         <div className="space-y-4">
           <div>
-            <p className="font-semibold text-gray-900 mb-3">I understand:</p>
+            <p className="font-semibold text-gray-900 mb-3">
+              I understand:
+              <span className="text-red-500 ml-1">*</span>
+            </p>
             <ul className="text-sm text-gray-700 list-disc list-inside space-y-2 mb-4">
               <li>
                 I must provide accurate medical and pre-existing condition information for myself and all household members.
@@ -463,7 +478,10 @@ export default function Step2Questionnaire({
           </div>
 
           <div className="border-t border-gray-200 pt-6 space-y-4">
-            <p className="font-semibold text-gray-900">Maternity and Delivery Needs</p>
+            <p className="font-semibold text-gray-900">
+              Maternity and Delivery Needs
+              <span className="text-red-500 ml-1">*</span>
+            </p>
             <p className="text-sm text-gray-700 leading-relaxed">
               I understand that maternity and delivery-related medical needs are subject to specific waiting periods and sharing
               limitations.
@@ -575,7 +593,6 @@ export default function Step2Questionnaire({
             <div>
               <p className="font-semibold text-gray-900 mb-2">
                 Spouse's Medical Conditions
-                <span className="text-red-500 ml-1">*</span>
               </p>
               <p className="text-sm text-gray-700 mb-2">
                 Has the primary member's spouse experienced symptoms of, been diagnosed with, or been treated for any condition within the past 24 months?
