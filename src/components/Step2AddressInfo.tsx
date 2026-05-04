@@ -1,4 +1,4 @@
-import { MapPin, ArrowLeft, Loader2, XCircle, ChevronDown, ChevronUp, FileText, Receipt, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { MapPin, ArrowLeft, Loader2, XCircle, ChevronDown, ChevronUp, FileText, Receipt, Eye, EyeOff } from 'lucide-react';
 import { FormData, Dependent, PaymentInfo } from '../hooks/useEnrollmentStorage';
 import { calculateEffectiveDates, formatEffectiveDateDisplay } from '../utils/dateCalculations';
 import { formatPhoneNumber, formatSSN } from '../utils/formatters';
@@ -12,6 +12,10 @@ import {
   getPrimarySubscriberPhoneDuplicateError,
   getPrimarySubscriberSsnDuplicateError,
 } from '../utils/dependentPhoneSsnDuplicateValidation';
+import {
+  isPremiumCareProhibitedState,
+  PREMIUM_CARE_STATE_UNAVAILABLE_MESSAGE,
+} from '../constants/premiumCareProhibitedStates';
 
 interface ApiResponse {
   success: boolean;
@@ -35,8 +39,6 @@ interface Step2AddressInfoProps {
   invalidDependentIndices?: number[];
 }
 
-const PROHIBITED_STATES = ['WA', 'DC', 'NJ', 'MA', 'RI'];
-
 export default function Step2AddressInfo({
   formData,
   errors,
@@ -56,9 +58,14 @@ export default function Step2AddressInfo({
   const errorMessageRef = useRef<HTMLDivElement>(null);
   const effectiveDateOptions = calculateEffectiveDates();
 
-  const isProhibitedState = useMemo(() => {
-    return PROHIBITED_STATES.includes(formData.state);
-  }, [formData.state]);
+  const isProhibitedState = useMemo(
+    () => isPremiumCareProhibitedState(formData.state),
+    [formData.state]
+  );
+
+  const primaryStateAvailabilityError =
+    formData.state && isProhibitedState ? PREMIUM_CARE_STATE_UNAVAILABLE_MESSAGE : '';
+  const primaryStateFieldError = errors.state || primaryStateAvailabilityError;
 
   const pricingSummary = useMemo(() => {
     const ONE_TIME_ENROLLMENT_FEE = 100;
@@ -127,17 +134,6 @@ export default function Step2AddressInfo({
 
   return (
     <div className="space-y-8">
-      {isProhibitedState && (
-        <div className="bg-amber-50 border-2 border-amber-500 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="w-6 h-6 text-amber-600 flex-shrink-0" />
-            <p className="text-base font-semibold text-amber-900">
-              This plan is not available in your state
-            </p>
-          </div>
-        </div>
-      )}
-
       <div className="space-y-6">
         <div className="flex items-center gap-2 mb-4">
           <MapPin className="w-5 h-5 text-blue-600" />
@@ -189,7 +185,7 @@ export default function Step2AddressInfo({
                 value={formData.state}
                 onChange={onChange}
                 className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition appearance-none bg-white ${
-                  errors.state ? 'border-red-500' : 'border-gray-300'
+                  primaryStateFieldError ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
                 <option value="">Select...</option>
@@ -245,7 +241,9 @@ export default function Step2AddressInfo({
                 <option value="WY">WY</option>
                 <option value="DC">DC</option>
               </select>
-              {errors.state && <p className="mt-1 text-sm text-red-500">{errors.state}</p>}
+              {primaryStateFieldError && (
+                <p className="mt-1 text-sm text-red-600">{primaryStateFieldError}</p>
+              )}
             </div>
 
             <div>
@@ -555,7 +553,7 @@ export default function Step2AddressInfo({
                   Processing...
                 </>
               ) : isProhibitedState ? (
-                'Not available in your state'
+                'Premium Care unavailable in this state'
               ) : (
                 'Submit Enrollment'
               )}

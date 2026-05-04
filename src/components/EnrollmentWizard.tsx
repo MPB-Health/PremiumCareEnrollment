@@ -15,6 +15,10 @@ import Step1PersonalInfo from './Step1PersonalInfo';
 import Step2Questionnaire from './Step2Questionnaire';
 import Step2AddressInfo from './Step2AddressInfo';
 import ThankYouPage from './ThankYouPage';
+import {
+  isPremiumCareProhibitedState,
+  PREMIUM_CARE_STATE_UNAVAILABLE_MESSAGE,
+} from '../constants/premiumCareProhibitedStates';
 
 interface ApiResponse {
   success: boolean;
@@ -272,7 +276,11 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
 
     if (!formData.address1.trim()) newErrors.address1 = 'Address is required';
     if (!formData.city.trim()) newErrors.city = 'City is required';
-    if (!formData.state.trim()) newErrors.state = 'State is required';
+    if (!formData.state.trim()) {
+      newErrors.state = 'State is required';
+    } else if (isPremiumCareProhibitedState(formData.state)) {
+      newErrors.state = PREMIUM_CARE_STATE_UNAVAILABLE_MESSAGE;
+    }
     if (!formData.zipcode.trim()) {
       newErrors.zipcode = 'Zipcode is required';
     } else if (formData.zipcode.length !== 5 || !/^\d{5}$/.test(formData.zipcode)) {
