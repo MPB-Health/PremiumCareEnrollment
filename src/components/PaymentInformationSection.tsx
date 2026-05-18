@@ -94,7 +94,7 @@ export default function PaymentInformationSection({
               <CreditCard className="w-5 h-5" />
               <span className="font-semibold">Credit Card</span>
             </button>
-            <p className="text-xs text-gray-600 text-center sm:text-left">
+            <p className="text-center text-sm font-normal text-red-600 sm:text-left">
               A 3% credit card fee will apply per transaction
             </p>
           </div>
