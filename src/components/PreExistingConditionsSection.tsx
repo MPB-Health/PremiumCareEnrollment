@@ -21,25 +21,24 @@ export default function PreExistingConditionsSection({
       <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
         <div className="prose prose-sm max-w-none">
           <p className="text-gray-800 leading-relaxed mb-4">
-            I understand that Pre-existing conditions have a waiting or phase in period. Zion Health attempts to negotiate all medical bills received and many membership types include the PHCS network for pre-negotiated medical expenses.
+          Any pre-existing medical condition whether diagnosed or not, that has been active or needed treatment within 36 months prior to a Member’s membership start date is subject to sharing limitations. Pre-existing conditions will become eligible for sharing based on the Member’s tenure with the Sedera Medical Cost Sharing Community, as indicated by the following graduated sharing schedule.
           </p>
-
           <ul className="space-y-2 text-gray-700 list-none pl-0">
             <li className="flex items-start gap-2">
               <span className="font-semibold text-blue-700 mt-0.5">•</span>
-              <span><strong className="text-gray-900">1st Year of Membership</strong> – Waiting period of all pre-existing conditions.</span>
+              <span><strong className="text-gray-900">First 12 months</strong> – Not shareable.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="font-semibold text-blue-700 mt-0.5">•</span>
-              <span><strong className="text-gray-900">2nd Year of Membership</strong> – Up to $25,000 of sharing for pre-existing conditions.</span>
+              <span><strong className="text-gray-900">Months 13-24</strong> – Shareable up to $25,000.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="font-semibold text-blue-700 mt-0.5">•</span>
-              <span><strong className="text-gray-900">3rd Year of Membership</strong> – Up to $50,000 of sharing for pre-existing conditions.</span>
+              <span><strong className="text-gray-900">Months 25-36</strong> – Shareable up to $50,000.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="font-semibold text-blue-700 mt-0.5">•</span>
-              <span><strong className="text-gray-900">4th Year of Membership and Beyond</strong> – Up to $125,000 of sharing for pre-existing conditions.</span>
+              <span><strong className="text-gray-900">Months 37 and after</strong> – shareable.</span>
             </li>
           </ul>
         </div>
