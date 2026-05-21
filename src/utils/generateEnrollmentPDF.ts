@@ -333,6 +333,40 @@ export async function generateEnrollmentPDF(formData: FormData): Promise<Blob> {
 
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
+  doc.text('Limitations on Pre-Existing Conditions', 14, yPosition);
+  yPosition += 7;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+
+  const limitationsOnPreExistingBlock =
+    'Any pre-existing medical condition whether diagnosed or not, that has been active or needed treatment within 36 months prior to a Member\'s membership start date is subject to sharing limitations. Pre-existing conditions will become eligible for sharing based on the Member\'s tenure with the Sedera Medical Cost Sharing Community, as indicated by the following graduated sharing schedule.\n\n' +
+    '• First 12 months – Not shareable.\n' +
+    '• Months 13-24 – Shareable up to $25,000.\n' +
+    '• Months 25-36 – Shareable up to $50,000.\n' +
+    '• Months 37 and after – shareable.\n\n' +
+    'Do you acknowledge and agree to these terms?';
+
+  autoTable(doc, {
+    startY: yPosition,
+    body: [[limitationsOnPreExistingBlock, formData.preExistingConditionsAcknowledged || 'N/A']],
+    theme: 'striped',
+    styles: { fontSize: 8, cellPadding: 3, lineColor: [200, 200, 200], lineWidth: 0.1 },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 120 },
+      1: { cellWidth: 'auto', halign: 'left' },
+    },
+  });
+
+  yPosition = (doc as any).lastAutoTable.finalY + 10;
+
+  if (yPosition > pageHeight - 80) {
+    doc.addPage();
+    yPosition = 20;
+  }
+
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
   doc.text('Questionnaire Responses', 14, yPosition);
   yPosition += 7;
 
