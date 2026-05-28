@@ -55,7 +55,7 @@ export default function EnrollmentSummary({
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) {
-      setPromoError('Please enter a promo code');
+      setPromoError('Please enter an enrollment code');
       return;
     }
 
@@ -70,7 +70,7 @@ export default function EnrollmentSummary({
       onAppliedPromoChange(result.promo);
       setPromoError('');
     } else {
-      setPromoError(result.error || 'Invalid promo code');
+      setPromoError(result.error || 'Invalid enrollment code');
       onAppliedPromoChange(null);
     }
   };
@@ -286,14 +286,14 @@ export default function EnrollmentSummary({
 
             <div className="border-t border-gray-300 pt-3 pb-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Have a promo code?
+                Enrollment code
               </label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={promoCode}
                   onChange={(e) => onPromoCodeChange(e.target.value.toUpperCase())}
-                  placeholder="Enter promo code"
+                  placeholder="Enter enrollment code"
                   disabled={appliedPromo !== null}
                   className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm ${
                     promoError ? 'border-red-500' : 'border-gray-300'
@@ -334,7 +334,7 @@ export default function EnrollmentSummary({
               {appliedPromo && (
                 <div className="flex items-center gap-1 mt-2 text-sm text-green-600">
                   <Check className="w-4 h-4" />
-                  <span>Promo code applied successfully!</span>
+                  <span>Enrollment code applied successfully!</span>
                 </div>
               )}
             </div>

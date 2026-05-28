@@ -42,7 +42,7 @@ export async function validatePromoCode(
   if (trimmed === '') {
     return {
       success: false,
-      error: 'Please enter a promo code',
+      error: 'Please enter an enrollment code',
     };
   }
 
@@ -61,7 +61,7 @@ export async function validatePromoCode(
       console.error('Error validating promo code:', error);
       return {
         success: false,
-        error: 'Error validating promo code. Please try again.',
+        error: 'Error validating enrollment code. Please try again.',
       };
     }
 
@@ -69,15 +69,15 @@ export async function validatePromoCode(
 
     if (!rows?.length) {
       return {
-        success: false,
-        error: 'Invalid promo code',
-      };
+      success: false,
+      error: 'Invalid enrollment code',
+    };
     }
 
     if (!row) {
       return {
         success: false,
-        error: 'This promo code is not valid for this enrollment product',
+        error: 'This enrollment code is not valid for this enrollment product',
       };
     }
 
