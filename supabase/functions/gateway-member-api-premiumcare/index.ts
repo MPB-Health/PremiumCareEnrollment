@@ -141,18 +141,30 @@ Deno.serve(async (req: Request) => {
 
     const hasMemberData = !!(requestData.memberId && requestData.pdfUrl);
 
+    if (!hasMemberData) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          status: 400,
+          error: "memberId and pdfUrl are required to attach the enrollment PDF",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     const formData = new URLSearchParams();
     formData.append("CORP_ID", "1402");
     formData.append("API_USERNAME", username);
     formData.append("API_PASSWORD", password);
     formData.append("AGENT_ID", agentNumber.toString());
-
-    if (hasMemberData) {
-      formData.append("DOC_TYPE", "Signature");
-      formData.append("DOC_DESCRIPTION", "Signature");
-      formData.append("DOC_PROCESSOR", "Internal");
-      formData.append("DOC_FILEURL", requestData.pdfUrl!);
-    }
+    formData.append("DOC_TYPE", "Signature");
+    formData.append("DOC_DESCRIPTION", "Signature");
+    formData.append("DOC_PROCESSOR", "Internal");
+    formData.append("DOC_FILEURL", requestData.pdfUrl!);
+    formData.append("UNIQUE_ID", requestData.memberId!);
 
     const gatewayApiUrl = "https://enrollment123.com/gateway/member.cfm";
 
@@ -173,9 +185,28 @@ Deno.serve(async (req: Request) => {
       responseData = responseText;
     }
 
+    let bodySuccess = response.ok;
+    if (response.ok && responseData && typeof responseData === "object") {
+      const root = responseData as Record<string, unknown>;
+      const tx = root.TRANSACTION as Record<string, unknown> | undefined;
+      const txVal = (tx?.SUCCESS ?? root.SUCCESS) as unknown;
+      if (typeof txVal !== "undefined") {
+        const isTrue =
+          txVal === true ||
+          txVal === "true" ||
+          (typeof txVal === "string" && txVal.toLowerCase() === "true");
+        const isFalse =
+          txVal === false ||
+          txVal === "false" ||
+          (typeof txVal === "string" && txVal.toLowerCase() === "false");
+        if (isFalse) bodySuccess = false;
+        else if (isTrue) bodySuccess = true;
+      }
+    }
+
     return new Response(
       JSON.stringify({
-        success: response.ok,
+        success: bodySuccess,
         status: response.status,
         data: responseData,
       }),
