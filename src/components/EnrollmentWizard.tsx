@@ -1056,7 +1056,6 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
       }
 
       const gatewayResult = await gatewayResponse.json();
-
       if (!gatewayResult.success) {
         throw new Error(gatewayResult.message || gatewayResult.error || 'Gateway API call failed');
       }
@@ -1105,13 +1104,11 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
       }
 
       const pdfResult = await pdfResponse.json();
-
       if (pdfResult.success && pdfResult.pdfUrl) {
         setPdfUrl(pdfResult.pdfUrl);
 
         if (enrollmentMemberId) {
           await sendPdfToGateway(enrollmentMemberId, pdfResult.pdfUrl);
-        } else {
         }
       } else {
         throw new Error(pdfResult.error || 'PDF upload failed');
