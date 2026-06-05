@@ -343,7 +343,7 @@ function buildZohoContactData(
     Start_Date: convertDateToZoho(payload.effectiveDate),
     Monthly_Premium: payload.selectedPrice,
     Lead_Source: "Enrollment Platform",
-    Account_Name: "Enrollment Website",
+    Account_Name: ownerName,
     Contact_Status: "New Enrollment",
     Carrier: "Sedera HealthShare",
     Company_Association: "MPB Health",
