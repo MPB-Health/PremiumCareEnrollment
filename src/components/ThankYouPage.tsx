@@ -26,7 +26,7 @@ export default function ThankYouPage({ enrollmentData, pdfUrl }: ThankYouPagePro
           </p>
 
           <p className="text-lg text-gray-700 mb-8">
-            Bellow it the link to your health benefits it is recommended to save it to your bookmarks. 
+            Bellow is the link to your health benefits, it is recommended to save it to your bookmarks. 
           </p>
 
           <p className="text-lg text-gray-700 mb-8">
