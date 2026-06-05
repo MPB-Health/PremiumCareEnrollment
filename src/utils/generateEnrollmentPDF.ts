@@ -116,7 +116,7 @@ export async function generateEnrollmentPDF(formData: FormData): Promise<Blob> {
 
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text('Care + Member Enrollment', pageWidth / 2, yPosition, { align: 'center' });
+  doc.text('Premium Care Enrollment', pageWidth / 2, yPosition, { align: 'center' });
 
   yPosition += 10;
   doc.setFontSize(10);
