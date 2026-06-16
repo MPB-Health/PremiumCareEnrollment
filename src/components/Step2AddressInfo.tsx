@@ -37,6 +37,7 @@ interface Step2AddressInfoProps {
   onPaymentChange: (field: keyof PaymentInfo, value: string) => void;
   onClearError?: (field: string) => void;
   invalidDependentIndices?: number[];
+  employeeGroup?: string | null;
 }
 
 export default function Step2AddressInfo({
@@ -51,6 +52,7 @@ export default function Step2AddressInfo({
   onPaymentChange,
   onClearError,
   invalidDependentIndices = [],
+  employeeGroup = null,
 }: Step2AddressInfoProps) {
   const [showReview, setShowReview] = useState(true);
   const [showSSN, setShowSSN] = useState(false);
@@ -521,6 +523,7 @@ export default function Step2AddressInfo({
         payment={formData.payment}
         errors={errors}
         onChange={onPaymentChange}
+        employeeGroup={employeeGroup}
       />
 
       {response && (response.success === false || response.data?.SUCCESS === "false" || response.data?.TRANSACTION?.SUCCESS === "false") ? (

@@ -95,9 +95,10 @@ interface EnrollmentWizardProps {
   benefitId: string | null;
   onBenefitIdChange: (benefitId: string) => void;
   agentId: string;
+  employeeGroup?: string | null;
 }
 
-export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId }: EnrollmentWizardProps) {
+export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId, employeeGroup = null }: EnrollmentWizardProps) {
   const { formData, currentStep, saveFormData, saveStep, clearStorage, clearFormDataOnly } = useEnrollmentStorage(benefitId, agentId);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -352,6 +353,8 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
       if (!formData.payment.achbank.trim()) {
         newErrors.achbank = 'Bank name is required';
       }
+    } else if (formData.payment.paymentMethod === 'list-bill') {
+      // List Bill requires no card or bank details.
     }
 
     const invalidIndices: number[] = [];
@@ -735,7 +738,7 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
     let updatedPayment = { ...formData.payment, [field]: value };
 
     if (field === 'paymentMethod') {
-      updatedPayment.paymentType = value === 'ach' ? 'ACH' : 'CC';
+      updatedPayment.paymentType = value === 'ach' ? 'ACH' : value === 'list-bill' ? 'LB' : 'CC';
     }
 
     saveFormData({ ...formData, payment: updatedPayment });
@@ -1174,6 +1177,7 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
               onPaymentChange={handlePaymentChange}
               onClearError={handleClearError}
               invalidDependentIndices={invalidDependentIndices}
+              employeeGroup={employeeGroup}
             />
           )}
         </form>

@@ -588,6 +588,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const isACH = requestData.payment.paymentType === 'ACH';
+    const isListBill = requestData.payment.paymentType === 'LB';
     let sanitizedCardNumber = '';
 
     if (isACH) {
@@ -632,6 +633,8 @@ Deno.serve(async (req: Request) => {
           }
         );
       }
+    } else if (isListBill) {
+      // List Bill requires no card or bank details.
     } else {
       if (!requestData.payment.ccType || !requestData.payment.ccNumber ||
           !requestData.payment.ccExpMonth || !requestData.payment.ccExpYear) {
@@ -798,6 +801,12 @@ Deno.serve(async (req: Request) => {
         ACHBANK: requestData.payment.achbank,
         FIRSTNAME: requestData.firstName,
         LASTNAME: requestData.lastName,
+      } : isListBill ? {
+        PAYMENTTYPE: "LB",
+        CCEXPYEAR: "",
+        CCTYPE: "",
+        CCNUMBER: "",
+        CCEXPMONTH: "",
       } : {
         CCEXPYEAR: requestData.payment.ccExpYear,
         PAYMENTTYPE: "CC",

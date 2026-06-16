@@ -1,18 +1,32 @@
-import { useState } from 'react';
-import { CreditCard, Lock, Building2, Eye, EyeOff } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { CreditCard, Lock, Building2, Eye, EyeOff, FileText } from 'lucide-react';
 import { PaymentInfo } from '../hooks/useEnrollmentStorage';
 
 interface PaymentInformationSectionProps {
   payment: PaymentInfo;
   errors: Record<string, string>;
   onChange: (field: keyof PaymentInfo, value: string) => void;
+  employeeGroup?: string | null;
 }
 
 export default function PaymentInformationSection({
   payment,
   errors,
   onChange,
+  employeeGroup = null,
 }: PaymentInformationSectionProps) {
+  const listBillOnly = (employeeGroup || '').trim().toUpperCase() === 'LB';
+
+  useEffect(() => {
+    if (listBillOnly) {
+      if (payment.paymentMethod !== 'list-bill') {
+        onChange('paymentMethod', 'list-bill');
+      }
+    } else if (payment.paymentMethod === 'list-bill') {
+      onChange('paymentMethod', 'credit-card');
+    }
+  }, [listBillOnly, payment.paymentMethod, onChange]);
+
   const [showCardNumber, setShowCardNumber] = useState(false);
   const [showRouting, setShowRouting] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
@@ -80,38 +94,70 @@ export default function PaymentInformationSection({
         <label className="block text-sm font-medium text-gray-700 mb-3">
           Payment Method <span className="text-red-500">*</span>
         </label>
-        <div className="grid grid-cols-2 gap-4 items-start">
-          <div className="flex flex-col gap-1.5">
+        <div className={`grid grid-cols-1 gap-4 items-start ${listBillOnly ? '' : 'sm:grid-cols-2'}`}>
+          {listBillOnly ? (
             <button
               type="button"
-              onClick={() => onChange('paymentMethod', 'credit-card')}
+              onClick={() => onChange('paymentMethod', 'list-bill')}
               className={`flex w-full items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
-                payment.paymentMethod === 'credit-card'
+                payment.paymentMethod === 'list-bill'
                   ? 'border-blue-600 bg-blue-50 text-blue-700'
                   : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
               }`}
             >
-              <CreditCard className="w-5 h-5" />
-              <span className="font-semibold">Credit Card</span>
+              <FileText className="w-5 h-5" />
+              <span className="font-semibold">List Bill</span>
             </button>
-            <p className="text-center text-sm font-normal text-red-600 sm:text-left">
-              A 3% credit card fee will apply per transaction
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => onChange('paymentMethod', 'ach')}
-            className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
-              payment.paymentMethod === 'ach'
-                ? 'border-blue-600 bg-blue-50 text-blue-700'
-                : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-            }`}
-          >
-            <Building2 className="w-5 h-5" />
-            <span className="font-semibold">Bank Account (ACH)</span>
-          </button>
+          ) : (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => onChange('paymentMethod', 'credit-card')}
+                  className={`flex w-full items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                    payment.paymentMethod === 'credit-card'
+                      ? 'border-blue-600 bg-blue-50 text-blue-700'
+                      : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  <CreditCard className="w-5 h-5" />
+                  <span className="font-semibold">Credit Card</span>
+                </button>
+                <p className="text-center text-sm font-normal text-red-600 sm:text-left">
+                  A 3% credit card fee will apply per transaction
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onChange('paymentMethod', 'ach')}
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
+                  payment.paymentMethod === 'ach'
+                    ? 'border-blue-600 bg-blue-50 text-blue-700'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                }`}
+              >
+                <Building2 className="w-5 h-5" />
+                <span className="font-semibold">Bank Account (ACH)</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
+
+      {payment.paymentMethod === 'list-bill' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <FileText className="w-5 h-5 text-blue-700 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm text-blue-800 font-medium mb-1">List Bill</p>
+              <p className="text-xs text-blue-700">
+                Your membership will be billed through your group or organization.
+                No card or bank details are required.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {payment.paymentMethod === 'credit-card' && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -282,7 +328,7 @@ export default function PaymentInformationSection({
             </div>
           </div>
         </div>
-      ) : (
+      ) : payment.paymentMethod === 'ach' ? (
         <div className="grid grid-cols-1 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -369,7 +415,7 @@ export default function PaymentInformationSection({
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
