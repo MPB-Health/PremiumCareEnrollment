@@ -788,7 +788,7 @@ Deno.serve(async (req: Request) => {
           bPaid: "N",
           FEES: [
             { TYPE: "Annual Membership", AMOUNT: "25.00", BENEFITID: 9493, PERIODID: 5 },
-            { TYPE: "Enrollment Fee", AMOUNT: enrollmentFeeAmount, BENEFITID: 6335, PERIODID: 7 },
+            { TYPE: "Enrollment", AMOUNT: enrollmentFeeAmount, BENEFITID: 6335, PERIODID: 7 },
             { TYPE: "Product", AMOUNT: productFeeAmount, BENEFITID: parseInt(requestData.benefitId), PERIODID: 1 },
             { TYPE: "Tobacco Use", AMOUNT: tobaccoFeeAmount, BENEFITID: 8037, PERIODID: 1 },
           ],
