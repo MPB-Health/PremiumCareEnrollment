@@ -1,11 +1,21 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import CryptoJS from "npm:crypto-js@4.2.0";
+import {
+  buildIdempotentEnrollmentResponse,
+  computePayloadHash,
+  extractMemberIdFromExternalResponse,
+  isValidSubmissionId,
+  loadSubmission,
+  markSubmissionEnrolled,
+  upsertSubmissionStarted,
+} from "../_shared/enrollmentSubmissions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey, Cache-Control",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Authorization, X-Client-Info, Apikey, Cache-Control, X-Submission-Id",
 };
 
 /** Keep in sync with src/constants/promo.ts DEFAULT_PROMO_PDID */
@@ -324,16 +334,6 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    if (req.method !== "POST") {
-      return new Response(
-        JSON.stringify({ success: false, status: 405, error: "Method not allowed" }),
-        {
-          status: 405,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
     const url = new URL(req.url);
     const agentIdParam = url.searchParams.get('id');
     const agentNumber = agentIdParam ? parseInt(agentIdParam) : 768413;
@@ -352,6 +352,54 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // GET: poll the status of an existing submission (used by the frontend to
+    // resume PDF/gateway phases after a duplicate-submit guard kicks in).
+    if (req.method === "GET") {
+      const statusSubmissionId = url.searchParams.get("submissionId");
+      if (!isValidSubmissionId(statusSubmissionId)) {
+        return new Response(
+          JSON.stringify({ success: false, status: 400, error: "Valid submissionId query param is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const row = await loadSubmission(supabase, statusSubmissionId!);
+      if (!row) {
+        return new Response(
+          JSON.stringify({ success: false, status: 404, error: "Submission not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          status: row.status,
+          memberId: row.member_id,
+          pdfUrl: row.pdf_url,
+          gatewayAttempts: row.gateway_attempts,
+          lastError: row.last_error,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    if (req.method !== "POST") {
+      return new Response(
+        JSON.stringify({ success: false, status: 405, error: "Method not allowed" }),
+        {
+          status: 405,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Idempotency key from the client. When present we de-duplicate member
+    // creation; when absent we fall back to the legacy direct-submit path so a
+    // not-yet-updated frontend keeps working (tolerant rollout).
+    const submissionIdHeader = req.headers.get("X-Submission-Id")?.trim() ?? "";
+    const submissionId = isValidSubmissionId(submissionIdHeader) ? submissionIdHeader : null;
 
     let rawData: Record<string, unknown> | undefined;
     let externalResponseData: unknown = undefined;
@@ -820,6 +868,49 @@ Deno.serve(async (req: Request) => {
 
     const memberJsonString = JSON.stringify(memberData);
 
+    // Idempotency gate: ensure the member is created at most once per submission.
+    if (submissionId) {
+      const payloadHash = computePayloadHash(
+        requestData.email,
+        requestData.effectiveDate,
+        requestData.benefitId,
+        agentNumber,
+      );
+
+      const { row: submissionRow, error: submissionError } = await upsertSubmissionStarted(
+        supabase,
+        {
+          submissionId,
+          customerEmail: requestData.email,
+          agentNumber,
+          payloadHash,
+        },
+      );
+
+      if (submissionError === "in_progress") {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            status: 409,
+            error: "Enrollment already in progress for this submission",
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      if (submissionRow?.member_id) {
+        return new Response(
+          JSON.stringify(
+            buildIdempotentEnrollmentResponse(
+              submissionRow.enrollment_response,
+              submissionRow.member_id,
+            ),
+          ),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     const formData = new URLSearchParams();
     formData.append("member", memberJsonString);
 
@@ -879,6 +970,24 @@ Deno.serve(async (req: Request) => {
 
     externalResponseData = responseData;
     externalHttpStatus = response.status;
+
+    // Record the member id so retries replay instead of re-enrolling.
+    if (submissionId && response.ok && responseData && typeof responseData === "object") {
+      const root = responseData as Record<string, unknown>;
+      const tx = root.TRANSACTION as Record<string, unknown> | undefined;
+      const txVal = (tx?.SUCCESS ?? root.SUCCESS) as unknown;
+      const isSuccess =
+        txVal === true ||
+        txVal === "true" ||
+        (typeof txVal === "string" && txVal.toLowerCase() === "true");
+
+      if (isSuccess) {
+        const enrolledMemberId = extractMemberIdFromExternalResponse(responseData);
+        if (enrolledMemberId) {
+          await markSubmissionEnrolled(supabase, submissionId, enrolledMemberId, responseData);
+        }
+      }
+    }
 
     return new Response(
       JSON.stringify({

@@ -11,6 +11,11 @@ import {
 } from '../utils/dependentPhoneSsnDuplicateValidation';
 import { isChildDependentUnder18ForContactOptional } from '../utils/dependentAgeValidation';
 import { encryptSensitiveFields } from '../utils/payloadEncryption';
+import {
+  getOrCreateSubmissionId,
+  clearSubmissionId,
+  fetchSubmissionStatus,
+} from '../utils/enrollmentSubmission';
 import ProgressIndicator from './ProgressIndicator';
 import Step1PersonalInfo from './Step1PersonalInfo';
 import Step2Questionnaire from './Step2Questionnaire';
@@ -102,6 +107,7 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
   const { formData, currentStep, saveFormData, saveStep, clearStorage, clearFormDataOnly } = useEnrollmentStorage(benefitId, agentId);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [finishingEnrollment, setFinishingEnrollment] = useState(false);
   const [response, setResponse] = useState<ApiResponse | null>(null);
   const [showThankYou, setShowThankYou] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -841,6 +847,7 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       const agentParam = formData.agent || agentId || '768413';
       const apiUrl = `${supabaseUrl}/functions/v1/enrollment-api-premiumcare?id=${agentParam}`;
+      const submissionId = getOrCreateSubmissionId();
 
       const carePlusProduct = formData.products.find(p => p.id === 'care-plus');
       const benefitIdToSend = carePlusProduct?.extractedBenefitId || formData.benefitId;
@@ -916,6 +923,7 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
               'Authorization': `Bearer ${supabaseKey}`,
               'Content-Type': 'application/json',
               'apikey': supabaseKey,
+              'X-Submission-Id': submissionId,
             },
             body: bodyString,
           });
@@ -937,6 +945,27 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
             enrollmentSuccess = true;
             extractedMemberId = evalResult.memberId;
             setMemberId(extractedMemberId);
+            break;
+          }
+
+          // Parallel duplicate submit: the member is being created by another
+          // in-flight request for this submissionId. Recover the member id from
+          // the submission status instead of re-POSTing (which would 409 again).
+          if (res.status === 409) {
+            const statusResult = await fetchSubmissionStatus(submissionId, agentParam);
+            if (statusResult?.memberId) {
+              enrollmentSuccess = true;
+              extractedMemberId = statusResult.memberId;
+              setMemberId(extractedMemberId);
+              break;
+            }
+            if (attempt < maxRetries - 1) {
+              attempt++;
+              const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              continue;
+            }
+            enrollmentResponseData = data;
             break;
           }
 
@@ -987,9 +1016,16 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
       }
 
       try {
-        await generateAndUploadPDF(extractedMemberId);
+        setFinishingEnrollment(true);
+        await generateAndUploadPDF(extractedMemberId, submissionId);
       } catch {
         // Intentionally swallow: never block the success UI on a storage failure.
+        // The background retry cron completes any pending gateway attach.
+      } finally {
+        // The attempt is complete (member created). Drop the id so a fresh
+        // enrollment later gets a new submissionId.
+        clearSubmissionId();
+        setFinishingEnrollment(false);
       }
 
       setShowThankYou(true);
@@ -1030,7 +1066,7 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
     }
   };
 
-  const sendPdfToGateway = async (memberId: string, pdfUrl: string) => {
+  const sendPdfToGateway = async (memberId: string, pdfUrl: string, submissionId?: string) => {
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -1049,6 +1085,7 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
           memberId,
           pdfUrl,
           customerEmail: formData.email,
+          ...(submissionId ? { submissionId } : {}),
         }),
       });
 
@@ -1068,7 +1105,7 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
     }
   };
 
-  const generateAndUploadPDF = async (enrollmentMemberId: string | null) => {
+  const generateAndUploadPDF = async (enrollmentMemberId: string | null, submissionId?: string) => {
     try {
       const pdfBlob = await generateEnrollmentPDF(formData);
 
@@ -1080,6 +1117,9 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
       const formDataUpload = new FormData();
       formDataUpload.append('pdf', pdfBlob, 'enrollment.pdf');
       formDataUpload.append('email', formData.email);
+      if (submissionId) {
+        formDataUpload.append('submissionId', submissionId);
+      }
       formDataUpload.append('metadata', JSON.stringify({
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -1111,7 +1151,7 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
         setPdfUrl(pdfResult.pdfUrl);
 
         if (enrollmentMemberId) {
-          await sendPdfToGateway(enrollmentMemberId, pdfResult.pdfUrl);
+          await sendPdfToGateway(enrollmentMemberId, pdfResult.pdfUrl, submissionId);
         }
       } else {
         throw new Error(pdfResult.error || 'PDF upload failed');
@@ -1172,6 +1212,7 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
               onBack={handleBack}
               onSubmit={handleSubmit}
               loading={loading}
+              finishingEnrollment={finishingEnrollment}
               response={response}
               onUpdateDependent={handleUpdateDependent}
               onPaymentChange={handlePaymentChange}

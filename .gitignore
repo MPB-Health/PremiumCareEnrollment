@@ -24,3 +24,6 @@ dist-ssr
 
 # Supabase CLI local state (link, versions)
 supabase/.temp/
+
+# Cursor MCP configuration (may contain project-specific endpoints)
+.cursor/mcp.json
