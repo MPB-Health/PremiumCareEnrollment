@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Clock } from 'lucide-react';
 import { useEnrollmentStorage, Dependent, PaymentInfo, QuestionnaireAnswers, AppliedPromo } from '../hooks/useEnrollmentStorage';
 import { getCarePlusPricingOptions, calculateAgeFromDOB } from '../utils/pricingLogic';
 import { generateEnrollmentPDF } from '../utils/generateEnrollmentPDF';
@@ -109,6 +110,7 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
   const [loading, setLoading] = useState(false);
   const [finishingEnrollment, setFinishingEnrollment] = useState(false);
   const [response, setResponse] = useState<ApiResponse | null>(null);
+  const [processingNotice, setProcessingNotice] = useState<string | null>(null);
   const [showThankYou, setShowThankYou] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [memberId, setMemberId] = useState<string | null>(null);
@@ -908,15 +910,32 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
         bodyString = JSON.stringify(requestBody);
       }
 
+      // Store the agreement PDF BEFORE enrolling. The PDF is built entirely from
+      // the form data (it does not need a member id), so uploading it up front
+      // guarantees it is always saved in Supabase storage even if the enrollment
+      // POST later times out (a 504 from the slow 1Administration API). We pass
+      // memberId = null and intentionally do NOT pass a submissionId, so the row
+      // never reaches 'pdf_stored' and the shared retry cron can't auto-attach it.
+      // Best-effort: never block enrollment on a storage failure.
+      setFinishingEnrollment(true);
+      try {
+        await generateAndUploadPDF(null);
+      } catch {
+        // PDF storage is best-effort; continue with enrollment regardless.
+      }
+      setFinishingEnrollment(false);
+
       let enrollmentSuccess = false;
       let extractedMemberId: string | null = null;
       let enrollmentResponseData: ApiResponse | null = null;
 
-      // Fire the member-creation call EXACTLY ONCE. We never auto-retry the POST:
+      // Fire the member-creation call EXACTLY ONCE, with a client-side timeout that
+      // matches the edge function wall-clock limit. We never auto-retry the POST:
       // a retry on a slow/lost response is what creates duplicate members/charges.
-      // A failure simply surfaces an error and the user retries manually. The
-      // reused submissionId + the server idempotency gate make even a manual
-      // retry safe (it replays the existing member instead of creating a new one).
+      const ENROLL_TIMEOUT_MS = 150000;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), ENROLL_TIMEOUT_MS);
+
       try {
         const res = await fetch(apiUrl, {
           method: 'POST',
@@ -926,8 +945,11 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
             'apikey': supabaseKey,
             'X-Submission-Id': submissionId,
           },
+          cache: 'no-store',
           body: bodyString,
+          signal: controller.signal,
         });
+        clearTimeout(timeoutId);
 
         const contentType = res.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
@@ -962,16 +984,20 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
           enrollmentResponseData = data;
         }
       } catch (error) {
-        const errMsg = error instanceof Error ? error.message : 'Unknown error';
-        const isTimeout = errMsg.includes('abort') || errMsg.includes('timeout');
-        enrollmentResponseData = {
-          success: false,
-          status: isTimeout ? 504 : 500,
-          error: isTimeout ? 'Request timed out' : 'Network error',
-          message: isTimeout
-            ? 'The enrollment server took too long to respond. Please try again.'
-            : `Failed to connect to enrollment API: ${errMsg}`,
-        };
+        clearTimeout(timeoutId);
+        // Timeout / network error: 1Administration may well have created the member,
+        // but we never received the response. The PDF is already stored above, and
+        // we do NOT retry (that is exactly what creates duplicates). Show a clear
+        // "still processing, do not resubmit" notice instead of an error.
+        const isTimeout = error instanceof DOMException && error.name === 'AbortError';
+        setProcessingNotice(
+          isTimeout
+            ? 'Your enrollment is taking longer than usual and is still being processed. Please do NOT resubmit — our team will confirm your enrollment shortly.'
+            : 'Your enrollment is being processed. Please do NOT resubmit — if you do not receive a confirmation, our team will follow up shortly.',
+        );
+        clearFormDataOnly();
+        setLoading(false);
+        return;
       }
 
       if (!enrollmentSuccess) {
@@ -988,22 +1014,8 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
         return;
       }
 
-      try {
-        setFinishingEnrollment(true);
-        // Generate + upload the PDF to Supabase storage only. We intentionally do
-        // NOT pass the submissionId here: that would mark the row 'pdf_stored' and
-        // the shared retry cron would auto-attach the PDF to 1Administration. The
-        // PDF is attached manually, so we keep it in storage for download instead.
-        await generateAndUploadPDF(extractedMemberId);
-      } catch {
-        // Intentionally swallow: never block the success UI on a storage failure.
-      } finally {
-        // The attempt is complete (member created). Drop the id so a fresh
-        // enrollment later gets a new submissionId.
-        clearSubmissionId();
-        setFinishingEnrollment(false);
-      }
-
+      // Member created. The PDF was already uploaded to storage before the POST.
+      clearSubmissionId();
       setShowThankYou(true);
       clearStorage();
       sendAdvisorNotification(agentParam).catch(() => {});
@@ -1093,6 +1105,46 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
       throw error;
     }
   };
+
+  if (processingNotice) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-white flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full">
+          <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 text-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-6">
+              <Clock className="w-12 h-12 text-blue-600" />
+            </div>
+
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Enrollment processing
+            </h1>
+
+            <p className="text-lg text-gray-700 mb-8">
+              {processingNotice}
+            </p>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+              <p className="font-semibold text-gray-900 mb-2">Need help?</p>
+              <div className="space-y-1 text-sm text-gray-700">
+                <p>
+                  <span className="font-medium">Email:</span>{' '}
+                  <a href="mailto:support@mpbhealth.com" className="text-blue-600 hover:text-blue-700 underline">
+                    support@mpbhealth.com
+                  </a>
+                </p>
+                <p>
+                  <span className="font-medium">Phone:</span>{' '}
+                  <a href="tel:1-800-MPB-HEALTH" className="text-blue-600 hover:text-blue-700 underline">
+                    1-800-MPB-HEALTH
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (showThankYou) {
     return <ThankYouPage enrollmentData={{ firstName: formData.firstName, email: formData.email }} pdfUrl={pdfUrl} />;
