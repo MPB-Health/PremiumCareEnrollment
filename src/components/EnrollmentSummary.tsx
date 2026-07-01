@@ -22,6 +22,8 @@ interface EnrollmentSummaryProps {
   onAppliedPromoChange: (promo: AppliedPromo | null) => void;
   /** Enrollment PDID for promocode product scope (see docs/promocode.md). */
   pdid: number;
+  /** Employee group from URL params; "LB" forces List Bill (no enrollment fee). */
+  employeeGroup?: string | null;
 }
 
 const planOptions: Record<string, { value: string; label: string; memberOnlyPrice?: number; plusOnePrice?: number; childrenPrice?: number }[]> = {
@@ -46,7 +48,10 @@ export default function EnrollmentSummary({
   onPromoCodeChange,
   onAppliedPromoChange,
   pdid,
+  employeeGroup = null,
 }: EnrollmentSummaryProps) {
+  const listBillOnly = (employeeGroup || '').trim().toUpperCase() === 'LB';
+  const oneTimeEnrollmentFee = listBillOnly ? 0 : 100;
   const [isValidatingPromo, setIsValidatingPromo] = useState(false);
   const [promoError, setPromoError] = useState<string>('');
 
@@ -125,7 +130,7 @@ export default function EnrollmentSummary({
   const hasDependentSmoker = dependents.some(dep => dep.smoker === 'Yes');
   const tobaccoFee = (isSubscriberSmoker || hasDependentSmoker) ? TOBACCO_MONTHLY_FEE_USD : 0;
 
-  const baseInitialPayment = totalEnrollmentFee + totalAnnualFee + 100;
+  const baseInitialPayment = totalEnrollmentFee + totalAnnualFee + oneTimeEnrollmentFee;
   const finalInitialPayment = applyPromoDiscount(baseInitialPayment, appliedPromo);
   const promoDiscount = baseInitialPayment - finalInitialPayment;
 
@@ -241,7 +246,7 @@ export default function EnrollmentSummary({
                     {product.id === 'care-plus' && product.annualFee && product.annualFee > 0 && (
                       <div className="space-y-1">
                         <p className="text-sm text-gray-700">${product.annualFee.toFixed(2)} per Year Annual Membership Fee</p>
-                        <p className="text-sm text-gray-700">$100.00 one-time enrollment</p>
+                        <p className="text-sm text-gray-700">${oneTimeEnrollmentFee.toFixed(2)} one-time enrollment</p>
                       </div>
                     )}
 
@@ -347,7 +352,7 @@ export default function EnrollmentSummary({
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700">One-Time Enrollment:</span>
-                  <span className="font-medium text-gray-800">$100.00</span>
+                  <span className="font-medium text-gray-800">${oneTimeEnrollmentFee.toFixed(2)}</span>
                 </div>
               </>
             )}

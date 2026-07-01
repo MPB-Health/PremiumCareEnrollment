@@ -1193,6 +1193,7 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
               onBenefitIdChange={onBenefitIdChange}
               onPromoCodeChange={handlePromoCodeChange}
               onAppliedPromoChange={handleAppliedPromoChange}
+              employeeGroup={employeeGroup}
             />
           )}
 

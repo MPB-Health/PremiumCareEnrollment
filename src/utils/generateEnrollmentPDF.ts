@@ -208,13 +208,19 @@ export async function generateEnrollmentPDF(formData: FormData): Promise<Blob> {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
 
-  const enrollmentFeeAmount = formData.appliedPromo?.discountAmount
-    ? 100 - formData.appliedPromo.discountAmount
-    : 100;
+  const isListBillPayment = formData.payment.paymentMethod === 'list-bill';
 
-  const enrollmentFeeText = formData.appliedPromo?.discountAmount
-    ? `$${enrollmentFeeAmount.toFixed(2)} one-time discount applied`
-    : '$100.00 one-time';
+  const enrollmentFeeAmount = isListBillPayment
+    ? 0
+    : formData.appliedPromo?.discountAmount
+      ? 100 - formData.appliedPromo.discountAmount
+      : 100;
+
+  const enrollmentFeeText = isListBillPayment
+    ? '$0.00 one-time'
+    : formData.appliedPromo?.discountAmount
+      ? `$${enrollmentFeeAmount.toFixed(2)} one-time discount applied`
+      : '$100.00 one-time';
 
   const enrollmentFeesInfo = [
     ['Annual Membership Fee:', '$25.00 per Year'],

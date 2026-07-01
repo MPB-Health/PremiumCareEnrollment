@@ -753,11 +753,12 @@ Deno.serve(async (req: Request) => {
 
     const productFeeAmount = requestData.selectedPrice.toFixed(2);
 
-    let enrollmentFeeAmount = "100.00";
+    // List Bill enrollments never carry an enrollment fee.
+    let enrollmentFeeAmount = isListBill ? "0.00" : "100.00";
 
     const effectivePromoPdid = getEffectivePromoPdid(requestData.pdid);
 
-    if (requestData.promoCode && requestData.promoCode.trim() !== "") {
+    if (!isListBill && requestData.promoCode && requestData.promoCode.trim() !== "") {
       const trimmedPromo = requestData.promoCode.trim();
 
       try {
