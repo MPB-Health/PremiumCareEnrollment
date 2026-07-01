@@ -1,14 +1,45 @@
 import { CheckCircle } from 'lucide-react';
 
+export interface ListBillSummary {
+  productName: string;
+}
+
 interface ThankYouPageProps {
   enrollmentData: {
     firstName: string;
     email: string;
   };
   pdfUrl?: string | null;
+  listBill?: ListBillSummary | null;
 }
 
-export default function ThankYouPage({ enrollmentData, pdfUrl }: ThankYouPageProps) {
+export default function ThankYouPage({ enrollmentData, pdfUrl, listBill }: ThankYouPageProps) {
+  if (listBill) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-white flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full">
+          <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
+                <CheckCircle className="w-12 h-12 text-green-600" />
+              </div>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Thank you!</h1>
+              <p className="text-lg text-gray-700 mb-8">
+                Your enrollment to MPB Health has been completed.
+              </p>
+            </div>
+            <div className="text-left">
+              <section className="rounded-xl border border-gray-200 p-5">
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">Product</h2>
+                <p className="text-gray-900">{listBill.productName}</p>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-white flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">

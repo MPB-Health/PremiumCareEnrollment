@@ -21,7 +21,7 @@ import ProgressIndicator from './ProgressIndicator';
 import Step1PersonalInfo from './Step1PersonalInfo';
 import Step2Questionnaire from './Step2Questionnaire';
 import Step2AddressInfo from './Step2AddressInfo';
-import ThankYouPage from './ThankYouPage';
+import ThankYouPage, { ListBillSummary } from './ThankYouPage';
 import {
   isPremiumCareProhibitedState,
   PREMIUM_CARE_STATE_UNAVAILABLE_MESSAGE,
@@ -112,6 +112,7 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
   const [response, setResponse] = useState<ApiResponse | null>(null);
   const [processingNotice, setProcessingNotice] = useState<string | null>(null);
   const [showThankYou, setShowThankYou] = useState(false);
+  const [listBillSummary, setListBillSummary] = useState<ListBillSummary | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [invalidDependentIndices, setInvalidDependentIndices] = useState<number[]>([]);
@@ -1016,6 +1017,16 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
 
       // Member created. The PDF was already uploaded to storage before the POST.
       clearSubmissionId();
+
+      // Snapshot the List Bill decision into state BEFORE clearStorage() resets
+      // formData (which would flip paymentMethod back to its default). The Thank
+      // You page renders from this snapshot, not from live formData.
+      if (formData.payment.paymentMethod === 'list-bill') {
+        setListBillSummary({ productName: 'Premium Care' });
+      } else {
+        setListBillSummary(null);
+      }
+
       setShowThankYou(true);
       clearStorage();
       sendAdvisorNotification(agentParam).catch(() => {});
@@ -1147,7 +1158,13 @@ export default function EnrollmentWizard({ benefitId, onBenefitIdChange, agentId
   }
 
   if (showThankYou) {
-    return <ThankYouPage enrollmentData={{ firstName: formData.firstName, email: formData.email }} pdfUrl={pdfUrl} />;
+    return (
+      <ThankYouPage
+        enrollmentData={{ firstName: formData.firstName, email: formData.email }}
+        pdfUrl={pdfUrl}
+        listBill={listBillSummary}
+      />
+    );
   }
 
   return (
