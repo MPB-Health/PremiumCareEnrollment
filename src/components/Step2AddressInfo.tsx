@@ -72,7 +72,10 @@ export default function Step2AddressInfo({
   const primaryStateFieldError = errors.state || primaryStateAvailabilityError;
 
   const pricingSummary = useMemo(() => {
-    const ONE_TIME_ENROLLMENT_FEE = 100;
+    const isListBill =
+      formData.payment.paymentMethod === 'list-bill' ||
+      (employeeGroup || '').trim().toUpperCase() === 'LB';
+    const ONE_TIME_ENROLLMENT_FEE = isListBill ? 0 : 100;
     const totalEnrollmentFee = formData.products.reduce((sum, p) => sum + (p.enrollmentFee || 0), 0);
     const totalAnnualFee = formData.products.reduce((sum, p) => sum + (p.annualFee || 0), 0);
 
@@ -99,7 +102,7 @@ export default function Step2AddressInfo({
       hasSmokerFee,
       smokerFee,
     };
-  }, [formData.products, formData.appliedPromo, formData.smoker, formData.dependents]);
+  }, [formData.products, formData.appliedPromo, formData.smoker, formData.dependents, formData.payment.paymentMethod, employeeGroup]);
 
   const subscriberPhoneDuplicate = useMemo(
     () =>
