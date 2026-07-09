@@ -77,7 +77,9 @@ export default function Step2AddressInfo({
       (employeeGroup || '').trim().toUpperCase() === 'LB';
     const ONE_TIME_ENROLLMENT_FEE = isListBill ? 0 : 100;
     const totalEnrollmentFee = formData.products.reduce((sum, p) => sum + (p.enrollmentFee || 0), 0);
-    const totalAnnualFee = formData.products.reduce((sum, p) => sum + (p.annualFee || 0), 0);
+    const totalAnnualFee = isListBill
+      ? 0
+      : formData.products.reduce((sum, p) => sum + (p.annualFee || 0), 0);
 
     const carePlusProduct = formData.products.find(p => p.id === 'care-plus');
     const baseRecurringMonthly = carePlusProduct?.extractedPrice || 0;

@@ -753,8 +753,9 @@ Deno.serve(async (req: Request) => {
 
     const productFeeAmount = requestData.selectedPrice.toFixed(2);
 
-    // List Bill enrollments never carry an enrollment fee.
+    // List Bill enrollments never carry enrollment or annual membership fees.
     let enrollmentFeeAmount = isListBill ? "0.00" : "100.00";
+    const annualMembershipFeeAmount = isListBill ? "0.00" : "25.00";
 
     const effectivePromoPdid = getEffectivePromoPdid(requestData.pdid);
 
@@ -836,7 +837,7 @@ Deno.serve(async (req: Request) => {
           dtEffective: formatDateToMMDDYYYY(requestData.effectiveDate),
           bPaid: "N",
           FEES: [
-            { TYPE: "Annual Membership", AMOUNT: "25.00", BENEFITID: 9493, PERIODID: 5 },
+            { TYPE: "Annual Membership", AMOUNT: annualMembershipFeeAmount, BENEFITID: 9493, PERIODID: 5 },
             { TYPE: "Enrollment", AMOUNT: enrollmentFeeAmount, BENEFITID: 6335, PERIODID: 7 },
             { TYPE: "Product", AMOUNT: productFeeAmount, BENEFITID: parseInt(requestData.benefitId), PERIODID: 1 },
             { TYPE: "Tobacco Use", AMOUNT: tobaccoFeeAmount, BENEFITID: 8037, PERIODID: 1 },

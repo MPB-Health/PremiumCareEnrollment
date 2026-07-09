@@ -124,7 +124,8 @@ export default function EnrollmentSummary({
 
   const totalEnrollmentFee = products.reduce((sum, product) => sum + product.enrollmentFee, 0);
   const totalRecurringFee = products.reduce((sum, product) => sum + calculateRecurringFee(product), 0);
-  const totalAnnualFee = products.reduce((sum, product) => sum + (product.annualFee || 0), 0);
+  const rawTotalAnnualFee = products.reduce((sum, product) => sum + (product.annualFee || 0), 0);
+  const totalAnnualFee = listBillOnly ? 0 : rawTotalAnnualFee;
 
   const isSubscriberSmoker = smoker === 'Yes';
   const hasDependentSmoker = dependents.some(dep => dep.smoker === 'Yes');
@@ -245,7 +246,7 @@ export default function EnrollmentSummary({
 
                     {product.id === 'care-plus' && product.annualFee && product.annualFee > 0 && (
                       <div className="space-y-1">
-                        <p className="text-sm text-gray-700">${product.annualFee.toFixed(2)} per Year Annual Membership Fee</p>
+                        <p className="text-sm text-gray-700">${(listBillOnly ? 0 : product.annualFee).toFixed(2)} per Year Annual Membership Fee</p>
                         <p className="text-sm text-gray-700">${oneTimeEnrollmentFee.toFixed(2)} one-time enrollment</p>
                       </div>
                     )}
@@ -344,7 +345,7 @@ export default function EnrollmentSummary({
               )}
             </div>
 
-            {totalAnnualFee > 0 && (
+            {rawTotalAnnualFee > 0 && (
               <>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700">Annual Membership Fee:</span>
