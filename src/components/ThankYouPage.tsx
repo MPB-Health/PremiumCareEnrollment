@@ -56,13 +56,13 @@ export default function ThankYouPage({ enrollmentData, pdfUrl, listBill }: Thank
             Your enrollment to MPB Health has been completed.
           </p>
 
-          <p className="text-lg text-gray-700 mb-8">
-            Bellow is the link to your health benefits, it is recommended to save it to your bookmarks. 
+           <p className="text-lg text-gray-700 mb-8">
+            Below is the link to your health benefits. It is recommended to save the link to your bookmarks. 
           </p>
 
-          <p className="text-lg text-gray-700 mb-8">
-            Please allow our system 1h to update your plan before access it. 
-          </p>
+            <p className="text-lg text-gray-700 mb-8">
+            Please allow our system 1 hour to update your membership before accessing it. 
+            </p>
 
           <div className="mb-8 py-4 border-t-2 border-b-2 border-blue-600">
             <h2 className="text-2xl md:text-3xl font-bold text-blue-600">
